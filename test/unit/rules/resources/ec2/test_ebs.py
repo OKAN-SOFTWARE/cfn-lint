@@ -236,3 +236,50 @@ def test_launch_configuration(instance, expected, rule, validator):
     errs = list(rule.validate(validator, keyword, instance, {}))
 
     assert errs == expected, f"Expected {expected} got {errs}"
+
+
+@pytest.mark.parametrize(
+    "instance,expected",
+    [
+        ({"VolumeType": "gp3", "Iops": 80000}, []),
+        (
+            {"VolumeType": "gp3", "Iops": 80001},
+            [("maximum", ["Iops"], "80001 is greater than the maximum of 80000")],
+        ),
+        ({"VolumeType": "gp3", "Iops": 2999}, []),
+        (
+            {"VolumeType": "gp3", "Iops": 99},
+            [("minimum", ["Iops"], "99 is less than the minimum of 100")],
+        ),
+        ({"VolumeType": "gp3"}, []),
+        ({"VolumeType": "gp3", "Iops": {"Ref": "IopsParameter"}}, []),
+        (
+            {"VolumeType": "io1"},
+            [
+                (
+                    "required",
+                    [],
+                    "'Iops' is a required property when 'VolumeType' "
+                    "has a value of 'io1'",
+                )
+            ],
+        ),
+        (
+            {"VolumeType": "io1", "Iops": 64001},
+            [("maximum", ["Iops"], "64001 is greater than the maximum of 64000")],
+        ),
+        ({"VolumeType": "io2", "Iops": 256000}, []),
+        (
+            {"VolumeType": "io2", "Iops": 256001},
+            [("maximum", ["Iops"], "256001 is greater than the maximum of 256000")],
+        ),
+    ],
+)
+def test_ec2_volume_iops(instance, expected, rule, validator):
+    keyword = "Resources/AWS::EC2::Volume/Properties"
+    assert keyword in rule.keywords
+
+    errs = list(rule.validate(validator, keyword, instance, {}))
+    actual = [(err.validator, list(err.path), err.message) for err in errs]
+
+    assert actual == expected

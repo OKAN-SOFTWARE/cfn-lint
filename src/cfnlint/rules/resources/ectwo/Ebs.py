@@ -31,6 +31,7 @@ class Ebs(CfnLintJsonSchema):
             keywords=[
                 _launch_configuration,
                 "Resources/AWS::EC2::Instance/Properties/BlockDeviceMappings/*/Ebs",
+                "Resources/AWS::EC2::Volume/Properties",
             ],
         )
         self._schema = load_resource(
